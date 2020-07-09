@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -eu -o pipefail
+
+main() {
+  rfc_dir=${1:-.}
+
+  make-name-links
+}
+
+make-name-links() (
+  cd "$rfc_dir"
+  rm -fr name
+  mkdir name
+
+  for rfc in ./RFC-*.md; do
+    rfc=${rfc#./}
+
+    title=$(head -n1 "$rfc")
+    if [[ $title == *--* ]]; then
+      [[ $rfc == *000* ]] && continue
+      title=${title#*--\ }
+    else
+      title=$(grep -A2 '^======' "$rfc" | tail -n1)
+    fi
+    title=${title//\ /-}
+    [[ $title == *[a-z]* ]] || continue
+
+    if [[ $rfc == *[0-9][0-9][0-9]* ]]; then
+      link=${rfc##*/}
+      link=${link%.md}-$title.md
+    else
+      link=RFC-$title.md
+    fi
+
+    (
+      ln -fs "../$rfc" "name/$link"
+    )
+  done
+)
+
+main "$@"
